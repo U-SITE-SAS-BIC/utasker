@@ -19,7 +19,13 @@ clean:
 	rm -f $(BIN)
 
 install: build
-	cp $(BIN) $(GOPATH)/bin/$(BIN) || sudo cp $(BIN) /usr/local/bin/$(BIN)
+	@mkdir -p $(shell go env GOPATH)/bin
+	cp $(BIN) $(shell go env GOPATH)/bin/$(BIN)
+	@echo "✓ Installed to $$(go env GOPATH)/bin/$(BIN)"
+
+sudo-install: build
+	sudo cp $(BIN) /usr/local/bin/$(BIN)
+	@echo "✓ Installed to /usr/local/bin/$(BIN)"
 
 release:
 	goreleaser release --clean

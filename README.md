@@ -35,7 +35,9 @@ Gestor de tareas desde la terminal que asocia automáticamente las tareas al dir
 git clone https://github.com/U-SITE-SAS-BIC/utasker.git
 cd utasker
 make build
-sudo make install
+make install          # a ~/go/bin/ (recomendado)
+# o
+sudo make sudo-install   # a /usr/local/bin/
 ```
 
 ### Vía Go install
