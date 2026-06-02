@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 	"time"
 
@@ -27,26 +28,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	watchInterval int
-)
+var watchInterval int
 
 var watchCmd = &cobra.Command{
 	Use:   "watch",
 	Short: "Live dashboard — auto-refreshes every N seconds",
-	Long: `Shows a live-updating task board that refreshes automatically.
+	Long: `Shows a live-updating task board organized by project and status.
 Like "top" but for your tasks.
 
 Examples:
   utasker watch
-  utasker watch --interval 5
-  utasker watch -a`,
+  utasker watch --interval 5`,
 	Aliases: []string{"w", "live"},
 	Run: func(cmd *cobra.Command, args []string) {
-		project := getProject()
-		if allFlag {
-			project = ""
-		}
+		project := ""
 
 		lastMod := time.Time{}
 		first := true
@@ -60,7 +55,7 @@ Examples:
 			if mod != lastMod || first {
 				lastMod = mod
 				first = false
-				renderWatch(project)
+				renderWatchByProject(project)
 			}
 
 			time.Sleep(time.Duration(watchInterval) * time.Second)
@@ -74,97 +69,117 @@ func clearScreen() {
 	cmd.Run()
 }
 
-func renderWatch(project string) {
+func renderWatchByProject(project string) {
 	clearScreen()
-
 	fmt.Print(branding.TagLine())
 	fmt.Println()
 
-	opts := db.ListOpts{All: true}
-	tasks, err := db.ListTasks(opts)
+	tasks, err := db.ListTasks(db.ListOpts{All: true})
 	if err != nil {
-		fmt.Println("Error:", err)
+		fmt.Println("  Error:", err)
 		return
 	}
 
-	var pending, doneP, cancelled []models.Task
-	today := time.Now().Format("2006-01-02")
+	byProject := make(map[string][]models.Task)
+	projectNames := []string{}
 
 	for _, t := range tasks {
 		if project != "" && t.Project != project {
 			continue
 		}
-		switch t.Status {
-		case models.StatusPending:
-			pending = append(pending, t)
-		case models.StatusDone:
-			doneP = append(doneP, t)
-		case models.StatusCancelled:
-			cancelled = append(cancelled, t)
+		p := t.Project
+		if p == "" {
+			p = "(no project)"
 		}
+		if _, ok := byProject[p]; !ok {
+			projectNames = append(projectNames, p)
+		}
+		byProject[p] = append(byProject[p], t)
 	}
 
-	total := len(pending) + len(doneP) + len(cancelled)
+	sort.Strings(projectNames)
 
-	if total == 0 {
+	totalTasks := len(tasks)
+	var totalPending, totalDone int
+	now := time.Now().Format("2006-01-02")
+	var overdue int
+
+	for _, p := range projectNames {
+		ts := byProject[p]
+		var pending, doneList []models.Task
+
+		for _, t := range ts {
+			switch t.Status {
+			case models.StatusPending:
+				pending = append(pending, t)
+				totalPending++
+				if t.DueDate != "" && t.DueDate < now {
+					overdue++
+				}
+			case models.StatusDone:
+				doneList = append(doneList, t)
+				totalDone++
+			}
+		}
+
+		projectLabel := p
+		color := branding.CyanS
+		if p == "(no project)" {
+			color = branding.GrayS
+		}
+
+		fmt.Printf("  %s %s\n", color(branding.BoldS("["+projectLabel+"]")), branding.GrayS(fmt.Sprintf("(%d)", len(ts))))
+
+		if len(pending) > 0 {
+			fmt.Printf("    %s\n", branding.YellowS("○ Pending"))
+			for _, t := range pending {
+				parts := []string{branding.CyanS(fmt.Sprintf("#%d", t.ID))}
+				if t.Priority > 0 {
+					parts = append(parts, branding.PriorityLabel(t.Priority))
+				}
+				if len(t.Tags) > 0 {
+					parts = append(parts, "("+strings.Join(t.Tags, ", ")+")")
+				}
+				if t.DueDate != "" {
+					due := t.DueDate
+					if due < now {
+						due = branding.RedS(due)
+					}
+					parts = append(parts, branding.GrayS("due:"+due))
+				}
+				parts = append(parts, t.Title)
+				fmt.Println("      " + strings.Join(parts, " "))
+			}
+		}
+
+		if len(doneList) > 0 {
+			fmt.Printf("    %s\n", branding.GreenS("✓ Done"))
+			for _, t := range doneList {
+				fmt.Printf("      %s %s\n", branding.CyanS(fmt.Sprintf("#%d", t.ID)), branding.GrayS(t.Title))
+			}
+		}
+		fmt.Println()
+	}
+
+	if totalTasks == 0 {
 		fmt.Println("  No tasks yet.")
 		fmt.Println()
 		return
 	}
 
-	printLiveSection("○ Pending", pending, allFlag)
-	printLiveSection("✓ Done", doneP, allFlag)
-	printLiveSection("✕ Cancelled", cancelled, allFlag)
-
-	var overdue int
-	for _, t := range pending {
-		if t.DueDate != "" && t.DueDate < today {
-			overdue++
-		}
-	}
-
-	fmt.Printf("\n  %s  Total: %d  |  Pending: %d  |  Done: %d  |  Overdue: %d\n",
+	fmt.Printf("  %s\n", branding.BoldS("Summary"))
+	fmt.Printf("  %s Total: %d  |  %s  |  %s  |  %s\n",
 		branding.GrayS("─"),
-		total, len(pending), len(doneP), overdue)
+		totalTasks,
+		branding.YellowS(fmt.Sprintf("Pending: %d", totalPending)),
+		branding.GreenS(fmt.Sprintf("Done: %d", totalDone)),
+		branding.RedS(fmt.Sprintf("Overdue: %d", overdue)))
 
-	fmt.Printf("  %s  Refreshing every %ds · Ctrl+C to quit\n",
+	fmt.Printf("  %s Refreshing every %ds · Ctrl+C to quit\n",
 		branding.GrayS("─"), watchInterval)
 }
 
-func printLiveSection(label string, tasks []models.Task, showProject bool) {
-	if len(tasks) == 0 {
-		return
-	}
-	colorized := label
-	if strings.Contains(label, "Pending") {
-		colorized = branding.YellowS(label)
-	} else if strings.Contains(label, "Done") {
-		colorized = branding.GreenS(label)
-	} else if strings.Contains(label, "Cancelled") {
-		colorized = branding.RedS(label)
-	}
-	fmt.Printf("  %s (%d)\n", branding.BoldS(colorized), len(tasks))
-	for _, t := range tasks {
-		parts := []string{branding.CyanS(fmt.Sprintf("#%d", t.ID))}
-		if showProject && t.Project != "" {
-			parts = append(parts, branding.BlueS("["+t.Project+"]"))
-		}
-		if t.Priority > 0 {
-			parts = append(parts, branding.PriorityLabel(t.Priority))
-		}
-		if len(t.Tags) > 0 {
-			parts = append(parts, "("+strings.Join(t.Tags, ", ")+")")
-		}
-		if t.DueDate != "" {
-			parts = append(parts, branding.GrayS("due:"+t.DueDate))
-		}
-		parts = append(parts, t.Title)
-		fmt.Println("    " + strings.Join(parts, " "))
-	}
-}
-
 func init() {
-	watchCmd.Flags().BoolVarP(&allFlag, "all", "a", false, "Show all projects")
 	watchCmd.Flags().IntVarP(&watchInterval, "interval", "i", 2, "Refresh interval in seconds")
 	rootCmd.AddCommand(watchCmd)
 }
