@@ -17,7 +17,9 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
+	"github.com/U-SITE-SAS-BIC/utasker/branding"
 	"github.com/U-SITE-SAS-BIC/utasker/db"
 	"github.com/spf13/cobra"
 )
@@ -42,22 +44,37 @@ func getProject() string {
 	return ""
 }
 
+func helpFunc(cmd *cobra.Command, args []string) {
+	if len(args) == 0 {
+		fmt.Print(branding.TagLine())
+	}
+	cmd.Parent().Help()
+}
+
 var rootCmd = &cobra.Command{
-	Use:     "task",
-	Version: Version,
-	Short:   "Task manager - simple, offline, project-aware",
-	Long: `task is a CLI task manager that works offline and connects tasks to your projects.
-
-Create a .task-project file in your project directory to automatically scope tasks:
-  task init myproject
-
-Then run commands without specifying the project each time.`,
+	Use:   "utasker",
+	Short: "Offline task manager · by U-SITE",
+	Long: `utasker is an offline-first CLI task manager that connects tasks
+to your project directories. No cloud, no database — just JSON.`,
+	SilenceUsage: true,
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},
 }
 
+func helpTemplate() string {
+	tpl := rootCmd.HelpTemplate()
+	brandBlock := branding.SmallLogo() + "\n"
+	tpl = brandBlock + tpl
+	tpl = strings.ReplaceAll(tpl, "{{.Short}}", branding.CyanS("utasker")+" · offline task manager · by "+branding.BlueS("U-SITE"))
+	tpl = strings.ReplaceAll(tpl, "{{.UseLine}}", "{{.UseLine}}")
+	return tpl
+}
+
 func Execute() {
+	rootCmd.Version = Version
+	rootCmd.SetHelpTemplate(helpTemplate())
+	rootCmd.SetVersionTemplate(branding.FullBanner(Version, Commit, Date))
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

@@ -1,22 +1,29 @@
-# task
+```
+██╗   ██╗████████╗ █████╗ ███████╗██╗  ██╗███████╗██████╗
+██║   ██║╚══██╔══╝██╔══██╗██╔════╝██║ ██╔╝██╔════╝██╔══██╗
+██║   ██║   ██║   ███████║███████╗█████╔╝ █████╗  ██████╔╝
+██║   ██║   ██║   ██╔══██║╚════██║██╔═██╗ ██╔══╝  ██╔══██╗
+╚██████╔╝   ██║   ██║  ██║███████║██║  ██╗███████╗██║  ██║
+ ╚═════╝    ╚═╝   ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
+```
 
-**Gestor de tareas CLI, offline-first y con detección automática de proyecto.**
+**utasker** · offline-first, project-aware CLI task manager · by [U-SITE](https://u-site.app)
 
-Task es un gestor de tareas desde la terminal que asocia automáticamente las tareas al directorio del proyecto donde trabajas. Sin daemons, sin base de datos, sin nube — solo archivos JSON en `~/.tasker/` y un archivo `.task-project` en tu proyecto.
+Gestor de tareas desde la terminal que asocia automáticamente las tareas al directorio del proyecto donde trabajas. Sin daemons, sin base de datos, sin nube — solo JSON.
 
 ---
 
 ## Características
 
-- **Offline-first** — todos los datos viven en `~/.tasker/tasks.json`, sin internet
-- **Proyectos automáticos** — las tareas se asocian al directorio donde estás
-- **Salida a color** — iconos de estado, niveles de prioridad, etiquetas, vencimientos
-- **Prioridades** — escala 1–5 con código de colores
-- **Etiquetas** — organiza con tags separados por coma
-- **Fechas límite** — tareas vencidas se resaltan en rojo
-- **Vista panorámica** — `task board` agrupa por estado con totales
-- **Exportación** — a texto plano para compartir o respaldar
-- **Sin dependencias** — binario único de Go, cero runtime
+- **Offline-first** — datos en `~/.tasker/tasks.json`, sin internet
+- **Proyectos automáticos** — tareas asociadas al directorio actual
+- **Salida a color** — iconos, prioridades, etiquetas, vencimientos
+- **Prioridades 1–5** — código de colores
+- **Etiquetas** — organización con tags
+- **Fechas límite** — vencidas en rojo
+- **Vista panorámica** — `utasker board` agrupa por estado
+- **Exportación** — a texto plano
+- **Sin dependencias** — binario único de Go
 
 ---
 
@@ -26,9 +33,9 @@ Task es un gestor de tareas desde la terminal que asocia automáticamente las ta
 
 ```sh
 git clone https://github.com/U-SITE-SAS-BIC/utasker.git
-cd tasker
-go build -o task .
-sudo cp task /usr/local/bin/
+cd utasker
+make build
+sudo make install
 ```
 
 ### Vía Go install
@@ -39,122 +46,79 @@ go install github.com/U-SITE-SAS-BIC/utasker@latest
 
 ### Binarios precompilados
 
-Descarga desde [releases](https://github.com/U-SITE-SAS-BIC/utasker/releases) para Linux, macOS y Windows.
+Descarga desde [releases](https://github.com/U-SITE-SAS-BIC/utasker/releases).
 
 ---
 
 ## Inicio rápido
 
 ```sh
-# Inicia el seguimiento en tu proyecto
+# Inicia seguimiento en tu proyecto
 cd mi-proyecto
-task init web-app
+utasker init web-app
 
 # Agrega tareas
-task add "Implementar login" -p 4 -d "Usar JWT" -t "backend,auth" --due 2026-07-15
-task add "Diseñar landing page" -p 3 -t "frontend"
-task add "Arreglar bug de navegación" -p 5 -t "urgente"
+utasker add "Implementar login" -p 4 -d "Usar JWT" -t "backend,auth" --due 2026-07-15
+utasker add "Diseñar landing" -p 3 -t "frontend"
+utasker add "Arreglar bug" -p 5 -t "urgente"
 
-# Lista las tareas del proyecto actual
-task list
+# Lista del proyecto actual
+utasker list
 
-# Marca como completada
-task done 1
+# Marca completada
+utasker done 1
 
-# Vista panorámica
-task board
+# Panorama completo
+utasker board
 
 # Exportar
-task export -f tareas.txt
+utasker export -f tareas.txt
+
+# Información del proyecto
+utasker about
+utasker version
 ```
 
 ---
 
-## Uso
-
-### Comandos
+## Comandos
 
 | Comando | Descripción |
 |---------|-------------|
-| `task init [nombre]` | Inicia seguimiento en el directorio actual |
-| `task add <título>` | Agrega una nueva tarea |
-| `task list` | Lista tareas (filtradas al proyecto actual) |
-| `task board` | Panorama completo agrupado por estado |
-| `task show <id>` | Muestra detalle de una tarea |
-| `task done <id>` | Marca tarea como completada |
-| `task undo <id>` | Reabre una tarea completada |
-| `task edit <id>` | Edita campos de una tarea |
-| `task delete <id>` | Elimina una tarea permanentemente |
-| `task project [nombre]` | Muestra o cambia el proyecto actual |
-| `task export` | Exporta tareas a texto plano |
+| `utasker init [nombre]` | Inicia seguimiento en el directorio actual |
+| `utasker add <título>` | Agrega una tarea |
+| `utasker list` | Lista tareas del proyecto actual |
+| `utasker board` | Panorama completo agrupado por estado |
+| `utasker show <id>` | Detalle de tarea |
+| `utasker done <id>` | Marca como completada |
+| `utasker undo <id>` | Reabre tarea |
+| `utasker edit <id>` | Edita tarea |
+| `utasker delete <id>` | Elimina tarea |
+| `utasker project [nombre]` | Muestra o cambia proyecto |
+| `utasker export` | Exporta a texto plano |
+| `utasker about` | Información del proyecto |
+| `utasker version` | Versión detallada |
 
 ### Banderas
 
 | Bandera | Se usa con | Descripción |
 |---------|------------|-------------|
-| `-a, --all` | `list`, `board`, `export` | Muestra tareas de todos los proyectos |
-| `-s, --status` | `list`, `export` | Filtra por estado (`pending`, `done`, `cancelled`) |
-| `-p, --priority` | `add`, `edit` | Nivel de prioridad 1–5 |
+| `-a, --all` | `list`, `board`, `export` | Todos los proyectos |
+| `-s, --status` | `list`, `export` | Filtra por estado |
+| `-p, --priority` | `add`, `edit` | Prioridad 1–5 |
 | `-d, --desc` | `add`, `edit` | Descripción |
 | `-t, --tags` | `add`, `edit` | Etiquetas separadas por coma |
-| `--due` | `add`, `edit` | Fecha límite (YYYY-MM-DD) |
-| `--project` | cualquiera | Sobrescribe el proyecto activo |
+| `--due` | `add`, `edit` | Fecha límite |
+| `--project` | cualquiera | Sobrescribe proyecto activo |
 | `-f, --file` | `export` | Archivo de salida |
 
-### Asociación a proyecto
-
-Crea un archivo `.task-project` en el directorio de tu proyecto:
-
-```sh
-cd mi-proyecto
-task init
-# o
-task init nombre-del-proyecto
-```
-
-Una vez iniciado, `task list` y los demás comandos filtran automáticamente a ese proyecto. El nombre del proyecto se guarda en `.task-project` (JSON).
-
-Para ver tareas de todos los proyectos:
-
-```sh
-task list -a
-task board -a
-```
-
 ---
 
-## Almacenamiento
-
-Todas las tareas se guardan en un solo archivo JSON:
+## Data
 
 ```
-~/.tasker/tasks.json
-```
-
-La asociación al proyecto se guarda por directorio:
-
-```
-mi-proyecto/.task-project    # {"project": "nombre-del-proyecto"}
-```
-
----
-
-## Desarrollo
-
-### Requisitos
-
-- Go 1.21+
-
-### Compilar
-
-```sh
-go build -o task .
-```
-
-### Probar
-
-```sh
-go test ./...
+~/.tasker/tasks.json           # todas las tareas
+mi-proyecto/.task-project       # {"project": "nombre"}
 ```
 
 ---
@@ -165,10 +129,6 @@ Apache 2.0 — ver [LICENSE](LICENSE).
 
 ---
 
-## Contribuir
+## Hecho por
 
-1. Haz fork del repositorio
-2. Crea una rama (`git checkout -b feature/mi-feature`)
-3. Haz commit (`git commit -am 'Agrega mi feature'`)
-4. Empuja a la rama (`git push origin feature/mi-feature`)
-5. Abre un Pull Request
+[U-SITE](https://u-site.app) · segundo open source ✨

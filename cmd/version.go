@@ -17,6 +17,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/U-SITE-SAS-BIC/utasker/branding"
 	"github.com/spf13/cobra"
 )
 
@@ -24,12 +25,27 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Show version info",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("task %s\n", Version)
-		fmt.Printf("commit: %s\n", Commit)
-		fmt.Printf("date:   %s\n", Date)
+		fmt.Print(branding.FullBanner(Version, Commit, Date))
+	},
+}
+
+var aboutCmd = &cobra.Command{
+	Use:   "about",
+	Short: "About utasker",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Print(branding.FullBanner(Version, Commit, Date))
+		fmt.Println(`  utasker is an open-source, offline-first task manager.
+  Tasks live in ~/.tasker/tasks.json and are scoped
+  to projects via .task-project files.
+
+  License: Apache 2.0
+  Repo:    https://github.com/U-SITE-SAS-BIC/utasker
+  Web:     https://u-site.app`)
+		fmt.Println()
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(aboutCmd)
 }
