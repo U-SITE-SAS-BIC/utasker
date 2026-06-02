@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -157,7 +158,16 @@ func AddTask(title, project, description string, priority int, tags []string, du
 	return task, nil
 }
 
-func ListTasks(project, status string, all bool) ([]models.Task, error) {
+type ListOpts struct {
+	Project  string
+	Status   string
+	Search   string
+	Tag      string
+	Priority int
+	All      bool
+}
+
+func ListTasks(opts ListOpts) ([]models.Task, error) {
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -166,17 +176,54 @@ func ListTasks(project, status string, all bool) ([]models.Task, error) {
 		return nil, err
 	}
 
+	search := strings.ToLower(strings.TrimSpace(opts.Search))
+	tagFilter := strings.ToLower(strings.TrimSpace(opts.Tag))
+
 	var result []models.Task
 	for _, t := range s.Tasks {
-		if !all && project != "" && t.Project != project {
+		if !opts.All && opts.Project != "" && t.Project != opts.Project {
 			continue
 		}
-		if status != "" && t.Status != status {
+		if opts.Status != "" && t.Status != opts.Status {
 			continue
+		}
+		if opts.Priority > 0 && t.Priority != opts.Priority {
+			continue
+		}
+		if tagFilter != "" {
+			found := false
+			for _, tag := range t.Tags {
+				if strings.ToLower(tag) == tagFilter {
+					found = true
+					break
+				}
+			}
+			if !found {
+				continue
+			}
+		}
+		if search != "" {
+			haystack := strings.ToLower(t.Title + " " + t.Description)
+			if !strings.Contains(haystack, search) {
+				continue
+			}
 		}
 		result = append(result, t)
 	}
 	return result, nil
+}
+
+func TasksChangedAt() (time.Time, error) {
+	dir, err := getConfigDir()
+	if err != nil {
+		return time.Time{}, err
+	}
+	path := filepath.Join(dir, tasksFileName)
+	info, err := os.Stat(path)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return info.ModTime(), nil
 }
 
 func GetTask(id int) (models.Task, error) {

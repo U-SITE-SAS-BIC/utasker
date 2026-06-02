@@ -46,7 +46,11 @@ Examples:
 			project = ""
 		}
 
-		tasks, err := db.ListTasks(project, exportStatus, exportAll)
+		tasks, err := db.ListTasks(db.ListOpts{
+			Project: project,
+			Status:  exportStatus,
+			All:     exportAll,
+		})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, color.RedS("Error:"), err)
 			os.Exit(1)

@@ -25,13 +25,24 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	listSearch  string
+	listTag     string
+	listPrio    int
+)
+
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List tasks",
-	Long: `List tasks filtered by project and status.
+	Long: `List tasks with powerful filtering.
 
-By default shows pending tasks for the current project.
-Use -a to show all projects, -A to show all statuses.`,
+Examples:
+  utasker list
+  utasker list -a
+  utasker list -s done
+  utasker list --search "login"
+  utasker list --tag urgent
+  utasker list --priority 4`,
 	Aliases: []string{"ls"},
 	Run: func(cmd *cobra.Command, args []string) {
 		project := getProject()
@@ -39,7 +50,16 @@ Use -a to show all projects, -A to show all statuses.`,
 			project = ""
 		}
 
-		tasks, err := db.ListTasks(project, statusFlag, allFlag)
+		opts := db.ListOpts{
+			Project:  project,
+			Status:   statusFlag,
+			All:      allFlag,
+			Search:   listSearch,
+			Tag:      listTag,
+			Priority: listPrio,
+		}
+
+		tasks, err := db.ListTasks(opts)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, color.RedS("Error:"), err)
 			os.Exit(1)
@@ -93,5 +113,8 @@ Use -a to show all projects, -A to show all statuses.`,
 func init() {
 	listCmd.Flags().BoolVarP(&allFlag, "all", "a", false, "Show tasks from all projects")
 	listCmd.Flags().StringVarP(&statusFlag, "status", "s", "", "Filter by status (pending, done, cancelled)")
+	listCmd.Flags().StringVar(&listSearch, "search", "", "Search in title and description")
+	listCmd.Flags().StringVar(&listTag, "tag", "", "Filter by tag")
+	listCmd.Flags().IntVar(&listPrio, "priority", 0, "Filter by priority (1-5)")
 	rootCmd.AddCommand(listCmd)
 }

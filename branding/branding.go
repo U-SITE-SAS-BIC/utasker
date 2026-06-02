@@ -31,6 +31,7 @@ func init() {
 const (
 	Reset   = "\033[0m"
 	Bold    = "\033[1m"
+	Red     = "\033[31m"
 	Cyan    = "\033[36m"
 	Blue    = "\033[34m"
 	Purple  = "\033[35m"
@@ -56,6 +57,26 @@ func GreenS(s string) string  { return colorize(Green, s) }
 func GrayS(s string) string   { return colorize(Gray, s) }
 func BoldS(s string) string   { return colorize(Bold, s) }
 func WhiteS(s string) string  { return colorize(White, s) }
+func RedS(s string) string    { return colorize(Red, s) }
+func ColorizeBold(code, s string) string { return colorize(code, BoldS(s)) }
+
+func PriorityLabel(prio int) string {
+	if prio <= 0 {
+		return ""
+	}
+	code := Cyan
+	switch {
+	case prio >= 5:
+		code = Red
+	case prio >= 4:
+		code = Yellow
+	case prio >= 3:
+		code = Purple
+	case prio >= 2:
+		code = Green
+	}
+	return colorize(code, fmt.Sprintf("P%d", prio))
+}
 
 var logoLines = []string{
 	"██╗   ██╗████████╗ █████╗ ███████╗██╗  ██╗███████╗██████╗ ",

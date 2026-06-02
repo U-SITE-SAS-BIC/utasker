@@ -36,7 +36,7 @@ Examples:
   task board -a`,
 	Aliases: []string{"b", "panorama"},
 	Run: func(cmd *cobra.Command, args []string) {
-		tasks, err := db.ListTasks("", "", true)
+		tasks, err := db.ListTasks(db.ListOpts{All: true})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, color.RedS("Error:"), err)
 			os.Exit(1)
