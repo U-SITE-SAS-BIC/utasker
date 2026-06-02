@@ -61,22 +61,26 @@ Requires internet access.`,
 
 		fmt.Printf("  %s Latest version: %s\n", branding.GreenS("✓"), branding.CyanS(release.Tag))
 
-		assetName := assetName()
+		suffix := assetSuffix()
 		downloadURL := ""
 		for _, a := range release.Assets {
-			if a.Name == assetName {
+			if strings.HasSuffix(a.Name, suffix) {
 				downloadURL = a.DownloadURL
 				break
 			}
 		}
 
 		if downloadURL == "" {
-			fmt.Fprintln(os.Stderr, branding.RedS("Error:"), "no asset found for", assetName)
-			fmt.Printf("  Available: %s\n", branding.YellowS("create a GitHub release first"))
+			fmt.Fprintln(os.Stderr, branding.RedS("Error:"), "no binary found for your system")
+			fmt.Printf("  %s Available assets:\n", branding.YellowS("?"))
+			for _, a := range release.Assets {
+				fmt.Printf("    %s\n", a.Name)
+			}
 			os.Exit(1)
 		}
 
-		fmt.Printf("  %s Downloading %s...\n", branding.CyanS("↓"), assetName)
+		archiveName := "utasker" + suffix
+		fmt.Printf("  %s Downloading %s...\n", branding.CyanS("↓"), archiveName)
 
 		tmpDir, err := os.MkdirTemp("", "utasker-update")
 		if err != nil {
@@ -85,7 +89,7 @@ Requires internet access.`,
 		}
 		defer os.RemoveAll(tmpDir)
 
-		archivePath := filepath.Join(tmpDir, assetName)
+		archivePath := filepath.Join(tmpDir, archiveName)
 		if err := downloadFile(downloadURL, archivePath); err != nil {
 			fmt.Fprintln(os.Stderr, branding.RedS("Error:"), err)
 			os.Exit(1)
@@ -233,7 +237,7 @@ func copyFile(src, dst string) error {
 	return err
 }
 
-func assetName() string {
+func assetSuffix() string {
 	osMap := map[string]string{
 		"darwin":  "macOS",
 		"linux":   "linux",
@@ -258,7 +262,7 @@ func assetName() string {
 		ext = "zip"
 	}
 
-	return fmt.Sprintf("utasker_%s_%s_%s.%s", "latest", goos, arch, ext)
+	return fmt.Sprintf("_%s_%s.%s", goos, arch, ext)
 }
 
 func init() {
